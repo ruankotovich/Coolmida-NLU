@@ -17,8 +17,10 @@ class CoolmidaNLU {
 		let out = [];
 		(w.toLowerCase().split(this.phraseSplitterRegex)).forEach((phrase) => {
 			let purifiedTokens = this.purgePhrase(phrase);
-			if (phrase.trim().length > 0) {
-				out.push({ original: `${phrase}`, purifyed: `${purifiedTokens.join(" ")}`, clazz: this.classify(purifiedTokens) });
+			let parsedInput = purifiedTokens.join(" ");
+
+			if (parsedInput.trim().length > 0) {
+				out.push({ original: `${phrase}`, purifyed: `${parsedInput}`, clazz: this.classify(purifiedTokens) });
 			}
 		});
 
