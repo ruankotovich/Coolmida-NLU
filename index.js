@@ -10,7 +10,6 @@ const port = 6666;
 // 	output: process.stdout
 // });
 
-
 (() => {
 	console.log("Training classifier...");
 	Coolmida.train(`train.json`, `stopwords.json`);

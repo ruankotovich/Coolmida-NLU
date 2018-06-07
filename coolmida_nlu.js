@@ -13,10 +13,17 @@ class CoolmidaNLU {
 		this.train();
 	}
 
+	splitOnTerms(w){
+		return diacritics.remove(w.toLowerCase()).replace(/\W/g, " ").split(this.phraseSplitterRegex);
+	}
+
 	posTagging(w) {
 		let out = [];
-		(w.toLowerCase().split(this.phraseSplitterRegex)).forEach((phrase) => {
-			let purifiedTokens = this.purgePhrase(phrase);
+
+		let brokenPieces = this.splitOnTerms(w);
+		
+		brokenPieces.forEach((phrase) => {
+			let purifiedTokens = this.tokenizePhrase(phrase);
 			let parsedInput = purifiedTokens.join(" ");
 
 			if (parsedInput.trim().length > 0) {
@@ -49,10 +56,9 @@ class CoolmidaNLU {
 		return new RegExp("(" + regexWords.join("|") + ")");
 	}
 
-	purgePhrase(ph) {
+	tokenizePhrase(ph) {
 		let purifiedTokens = [];
 
-		ph = diacritics.remove(ph);
 
 		tokenizer.tokenize(ph).forEach((token) => {
 
@@ -75,7 +81,8 @@ class CoolmidaNLU {
 
 					phraseSeparators.push(curPhrase);
 
-					classifier.addDocument(this.purgePhrase(curPhrase), `${intention}.${value}`);
+					classifier.addDocument(this.tokenizePhrase(diacritics.remove(curPhrase)), `${intention}.${value}`);
+
 				});
 			});
 		});
