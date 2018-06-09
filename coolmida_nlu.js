@@ -23,7 +23,7 @@ class CoolmidaNLU {
 		ph = diacritics.remove(ph.toLowerCase().replace(/( ?[^\w|\s] ?)/g, mild ? "" : " "));
 
 		tokenizer.tokenize(ph).forEach((token) => {
-			
+
 			if (!(this.stopwordSet.has(token))) {
 				purifiedTokens.push(stemmer.stem(token.trim()));
 			}
@@ -33,7 +33,7 @@ class CoolmidaNLU {
 	}
 
 	splitOnTerms(w) {
-		return this.tokenizePhrase(w);
+		return this.tokenizePhrase(w).join(" ").split(this.phraseSplitterRegex);
 	}
 
 	classify(phrase) {
@@ -84,7 +84,7 @@ class CoolmidaNLU {
 			regexWords.push("^" + preparedWord + " ");
 			regexWords.push(" " + preparedWord + "$");
 		});
-		return new RegExp("(" + regexWords.join("|") + ")+");
+		return new RegExp("(" + regexWords.join("|") + ")+", "g");
 	}
 
 	posTagging(w) {
