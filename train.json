@@ -24,6 +24,39 @@
       "pau",
       "cruzeiros",
       "dindin"
+    ],
+    "volume.liter": [
+      "litro",
+      "litros",
+      "l"
+    ],
+    "volume.mililiter": [
+      "ml",
+      "mililitro",
+      "mililitros"
+    ],
+    "weight.miligram": [
+      "mg",
+      "miligrama",
+      "miligramas"
+    ],
+    "weight.kilogram": [
+      "kg",
+      "kiligrama",
+      "kilogramas",
+      "kilo",
+      "kilos"
+    ],
+    "weight.gram": [
+      "g",
+      "grama",
+      "gramas"
+    ],
+    "volume.tea_cup":[
+      "xícara de chá"
+    ],
+    "volume.tea_spoon":[
+      "colher de chá"
     ]
   },
   "speed": {
