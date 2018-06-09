@@ -23,7 +23,7 @@ class CoolmidaNLU {
 		ph = diacritics.remove(ph.toLowerCase().replace(/( ?[^\w|\s] ?)/g, mild ? "" : " "));
 
 		tokenizer.tokenize(ph).forEach((token) => {
-			
+
 			if (!(this.stopwordSet.has(token))) {
 				purifiedTokens.push(stemmer.stem(token.trim()));
 			}
@@ -33,7 +33,27 @@ class CoolmidaNLU {
 	}
 
 	splitOnTerms(w) {
-		return this.tokenizePhrase(w);
+		let phraseList = [];
+		let k = this.tokenizePhrase(w);
+
+		let lastIndex = 0;
+
+		for (let index = 0; index < k.length; ++index) {
+
+			if (this.termSet.has(k[index])) {
+				if (lastIndex < index) {
+					phraseList.push(k.slice(lastIndex, index).join(" "));
+				}
+				phraseList.push(k[index]);
+				lastIndex = index + 1;
+			}
+
+		}
+
+		phraseList.push(k.slice(lastIndex, k.length).join(" "));
+		console.log(phraseList);
+		return phraseList;
+
 	}
 
 	classify(phrase) {
@@ -64,7 +84,7 @@ class CoolmidaNLU {
 		}
 	}
 
-	wordCollectionToRegex(words) {
+	wordCollectionToSet(words) {
 		let regexWords = [];
 
 		Object.keys(Numbermap).forEach((k) => {
@@ -73,18 +93,14 @@ class CoolmidaNLU {
 			k = this.tokenizePhrase(k, true).join(" ");
 			StemmedNumbermap[k] = value;
 
-			regexWords.push(" " + k + " ");
-			regexWords.push("^" + k + " ");
-			regexWords.push(" " + k + "$");
+			regexWords.push(k);
 		});
 
 		words.forEach((e) => {
 			let preparedWord = e.trim().replace("$", "\\$").replace("^", "\\^");
-			regexWords.push(" " + preparedWord + " ");
-			regexWords.push("^" + preparedWord + " ");
-			regexWords.push(" " + preparedWord + "$");
+			regexWords.push(preparedWord);
 		});
-		return new RegExp("(" + regexWords.join("|") + ")+");
+		return new Set(regexWords);
 	}
 
 	posTagging(w) {
@@ -120,9 +136,8 @@ class CoolmidaNLU {
 			});
 		});
 
-		this.phraseSplitterRegex = this.wordCollectionToRegex(phraseSeparators);
-
-		console.log(this.phraseSplitterRegex.toString());
+		this.termSet = this.wordCollectionToSet(phraseSeparators);
+		console.log(this.termSet);
 
 		classifier.train();
 	}

@@ -1,14 +1,8 @@
 const Coolmida = require('./coolmida_nlu').NLU;
 const Joi = require('joi');
 
-// const readline = require('readline');
 const app = require('express')();
 const port = 6666;
-
-// let rl = readline.createInterface({
-// 	input: process.stdin,
-// 	output: process.stdout
-// });
 
 (() => {
 	console.log("Training classifier...");
