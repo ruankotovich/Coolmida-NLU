@@ -1,0 +1,17 @@
+{
+  "apps": [
+    {
+      "name": "coolmida-nlu",
+      "script": "index.js",
+      "instances": "1",
+      "out_file": "./log/test-out.log",
+      "error_file": "./log/test-err.log",
+      "ignore_watch": [
+        "node_modules",
+        "log/"
+      ],
+      "max_memory_restart": "200M",
+      "exec_mode": "cluster"
+    }
+  ]
+}
