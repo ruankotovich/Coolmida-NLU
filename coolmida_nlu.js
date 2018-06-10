@@ -38,7 +38,9 @@ class CoolmidaNLU {
 	}
 
 	splitOnTerms(w) {
-		return `${this.tokenizePhrase(w.replace(/[$-/:-?{-~!"^_`\[\]]/,"0xbreakx0")).join(" ")} 0xbreakx0`.split(this.phraseSplitterRegex).filter((e)=>{
+
+		console.log(`${this.tokenizePhrase(w.replace(/[$-/:-?{-~!"^_`\[\]]/g,"0xbreakx0")).join(" ")} 0xbreakx0`);
+		return `${this.tokenizePhrase(w.replace(/[$-/:-?{-~!"^_`\[\]]/g,"0xbreakx0")).join(" ")} 0xbreakx0`.split(this.phraseSplitterRegex).filter((e)=>{
 			return e;
 		});
 	}
