@@ -9,6 +9,11 @@ const classifier = new natural.BayesClassifier();
 const stemmer = natural.PorterStemmerPt;
 const str$distance = natural.JaroWinklerDistance;
 
+String.prototype.replaceAll = function (search, replacement) {
+	var target = this;
+	return target.replace(new RegExp(search, 'g'), replacement);
+};
+
 class CoolmidaNLU {
 
 	constructor(td, sws) {
@@ -20,7 +25,7 @@ class CoolmidaNLU {
 	tokenizePhrase(ph, mild = false) {
 		let purifiedTokens = [];
 
-		ph = diacritics.remove(ph.toLowerCase().replace(/( ?[^\w|\s] ?)/g, mild ? "" : " "));
+		ph = diacritics.remove(ph.toLowerCase()).replace(/( ?[^\w|\s] ?)/g, mild ? "" : " ");
 
 		tokenizer.tokenize(ph).forEach((token) => {
 
@@ -33,7 +38,7 @@ class CoolmidaNLU {
 	}
 
 	splitOnTerms(w) {
-		return this.tokenizePhrase(w).join(" ").split(this.phraseSplitterRegex);
+		return `${this.tokenizePhrase(w).join(" ")}`.split(this.phraseSplitterRegex);
 	}
 
 	classify(phrase) {
@@ -73,24 +78,29 @@ class CoolmidaNLU {
 			k = this.tokenizePhrase(k, true).join(" ");
 			StemmedNumbermap[k] = value;
 
-			regexWords.push(" " + k + " ");
-			regexWords.push("^" + k + " ");
-			regexWords.push(" " + k + "$");
+			if (k.length > 0) {
+				regexWords.push(" " + k.replaceAll(" ", " +") + " ");
+			}
 		});
 
 		words.forEach((e) => {
-			let preparedWord = e.trim().replace("$", "\\$").replace("^", "\\^");
-			regexWords.push(" " + preparedWord + " ");
-			regexWords.push("^" + preparedWord + " ");
-			regexWords.push(" " + preparedWord + "$");
+			let preparedWord = e.trim().replaceAll("\\$", "s").replaceAll("\\^", "\@").replaceAll(" ", " +");
+			if (preparedWord.length > 0) {
+				regexWords.push(" " + preparedWord + " ");
+			}
 		});
+
+		regexWords.sort((a, b) => {
+			return b.length - a.length;
+		})
+
 		return new RegExp("(" + regexWords.join("|") + ")+", "g");
 	}
 
 	posTagging(w) {
 		let out = [];
 
-		let brokenPieces = this.splitOnTerms(w.replace("$", "s").replace("^", "\\^"));
+		let brokenPieces = this.splitOnTerms(w.replaceAll("\\$", "s").replaceAll("\\^", "\@"));
 
 		brokenPieces.forEach((phrase) => {
 			let purifiedTokens = this.tokenizePhrase(phrase);
