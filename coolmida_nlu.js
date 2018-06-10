@@ -67,7 +67,7 @@ class CoolmidaNLU {
 
 			let outgoingClazz = classifier.getClassifications(phrase)[0];
 
-			outgoingClazz.meaning = ` ${phrase.join(" ")} `.replace(this.phraseSplitterRegex, "").trim().trim();
+			outgoingClazz.meaning = ` ${phrase.join(" ")} `.replace(this.phraseSplitterRegex, "").trim();
 
 			if(outgoingClazz.meaning.length < 1){
 				delete outgoingClazz.meaning;
@@ -139,8 +139,6 @@ class CoolmidaNLU {
 		});
 
 		this.phraseSplitterRegex = this.wordCollectionToRegex(phraseSeparators);
-
-		console.log(this.phraseSplitterRegex.toString());
 
 		classifier.train();
 	}
