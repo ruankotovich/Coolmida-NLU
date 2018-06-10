@@ -52,10 +52,10 @@
       "grama",
       "gramas"
     ],
-    "volume.tea_cup":[
+    "volume.tea_cup": [
       "xícara de chá"
     ],
-    "volume.tea_spoon":[
+    "volume.tea_spoon": [
       "colher de chá"
     ]
   },
@@ -90,6 +90,14 @@
     ]
   },
   "specification": {
+    "time.minute": [
+      "minuto",
+      "minutos"
+    ],
+    "time.hour": [
+      "hora",
+      "horas"
+    ],
     "price_from": [
       "a partir de",
       "maior que",

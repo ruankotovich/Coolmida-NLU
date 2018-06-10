@@ -38,7 +38,9 @@ class CoolmidaNLU {
 	}
 
 	splitOnTerms(w) {
-		return `${this.tokenizePhrase(w).join(" ")}`.split(this.phraseSplitterRegex);
+		return `${this.tokenizePhrase(w.replace(/[$-/:-?{-~!"^_`\[\]]/,"0xbreakx0")).join(" ")} 0xbreakx0`.split(this.phraseSplitterRegex).filter((e)=>{
+			return e;
+		});
 	}
 
 	classify(phrase) {
@@ -69,7 +71,7 @@ class CoolmidaNLU {
 
 			outgoingClazz.meaning = ` ${phrase.join(" ")} `.replace(this.phraseSplitterRegex, "").trim();
 
-			if(outgoingClazz.meaning.length < 1){
+			if (outgoingClazz.meaning.length < 1) {
 				delete outgoingClazz.meaning;
 			}
 
@@ -102,7 +104,7 @@ class CoolmidaNLU {
 			return b.length - a.length;
 		})
 
-		return new RegExp("(" + regexWords.join("|") + ")+", "g");
+		return new RegExp("(" + regexWords.join("|") + ")+|0xbreakx0", "g");
 	}
 
 	posTagging(w) {
@@ -110,6 +112,7 @@ class CoolmidaNLU {
 
 		let brokenPieces = this.splitOnTerms(w.replaceAll("\\$", "s").replaceAll("\\^", "\@"));
 
+		console.log(brokenPieces);
 		brokenPieces.forEach((phrase) => {
 			let purifiedTokens = this.tokenizePhrase(phrase);
 			let parsedInput = purifiedTokens.join(" ");
@@ -122,6 +125,63 @@ class CoolmidaNLU {
 		return out;
 	}
 
+	intentionDetect(w) {
+		let lastSched = {};
+
+		let user = {
+			time: Infinity,
+			budget: Infinity,
+			has: []
+		};
+
+		for (let tag of this.posTagging(w)) {
+
+			let useCurrentClass = false;
+
+			if (tag.meaning) {
+				if (tag.clazz.label === "value.numeric") {
+					useCurrentClass = true;
+				}
+			}
+
+			if (useCurrentClass) {
+
+				switch (tag.clazz.label) {
+					case "value.money": { } break;
+					case "value.volume.liter": { } break;
+					case "value.volume.mililiter": { } break;
+					case "value.weight.miligram": { } break;
+					case "value.weight.kilogram": { } break;
+					case "value.weight.gram": { } break;
+					case "value.volume.tea_cup": { } break;
+					case "value.volume.tea_spoon": { } break;
+					case "speed.fast": { } break;
+					case "speed.normal": { } break;
+					case "specification.price_from": { } break;
+					case "specification.price_until": { } break;
+					case "specification.want": { } break;
+
+				}
+			} else {
+				switch (lastSched) {
+					case "value.money": { } break;
+					case "value.volume.liter": { } break;
+					case "value.volume.mililiter": { } break;
+					case "value.weight.miligram": { } break;
+					case "value.weight.kilogram": { } break;
+					case "value.weight.gram": { } break;
+					case "value.volume.tea_cup": { } break;
+					case "value.volume.tea_spoon": { } break;
+					case "speed.fast": { } break;
+					case "speed.normal": { } break;
+					case "specification.price_from": { } break;
+					case "specification.price_until": { } break;
+					case "specification.want": { } break;
+				}
+			}
+		}
+	}
+
 	train() {
 		let phraseSeparators = [];
 
@@ -131,7 +191,6 @@ class CoolmidaNLU {
 					let curTokenizedPhrase = this.tokenizePhrase(phrase);
 
 					phraseSeparators.push(curTokenizedPhrase.join(" "));
-
 					classifier.addDocument(curTokenizedPhrase, `${intention}.${value}`);
 
 				});
@@ -139,7 +198,6 @@ class CoolmidaNLU {
 		});
 
 		this.phraseSplitterRegex = this.wordCollectionToRegex(phraseSeparators);
-
 		classifier.train();
 	}
 };

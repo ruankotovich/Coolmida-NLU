@@ -33,7 +33,7 @@ const port = 6666;
 				console.log(`Successfully returned`);
 				return res.status(200).send(processedInput);
 			} catch (err) {
-				console.error(err.toString());
+				console.error(err);
 				return res.status(500).send(err.toString());
 			}
 		}
