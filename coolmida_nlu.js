@@ -7,7 +7,7 @@ let StemmedNumbermap = {};
 const tokenizer = new natural.OrthographyTokenizer({ language: "pt" })
 const classifier = new natural.BayesClassifier();
 const stemmer = natural.PorterStemmerPt;
-const str$distance = natural.JaroWinklerDistance;
+const str$distance = natural.LevenshteinDistance;
 
 String.prototype.replaceAll = function (search, replacement) {
 	var target = this;
@@ -53,7 +53,7 @@ class CoolmidaNLU {
 
 				let dist;
 
-				if ((dist = str$distance(numb, phrase.join(" "))) > .9) {
+				if ((dist = str$distance(numb, phrase.join(" "))) <= 1) {
 					if (dist < seeker.smallerDistance) {
 						seeker = { found: true, value: StemmedNumbermap[numb], smallerDistance: dist };
 					}
@@ -65,7 +65,15 @@ class CoolmidaNLU {
 			}
 
 
-			return classifier.getClassifications(phrase)[0];
+			let outgoingClazz = classifier.getClassifications(phrase)[0];
+
+			outgoingClazz.meaning = ` ${phrase.join(" ")} `.replace(this.phraseSplitterRegex, "").trim().trim();
+
+			if(outgoingClazz.meaning.length < 1){
+				delete outgoingClazz.meaning;
+			}
+
+			return outgoingClazz;
 		}
 	}
 
