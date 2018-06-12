@@ -113,12 +113,40 @@ class CoolmidaNLU {
 		}
 		return recipeSet;
 	}
+
+	recoverRecipesByTerm(termArray) {
+		let recipeSet = new Set();
+
+		for (let term of termArray) {
+
+			let recoveredRecipesFromTerm = this.reverseRecipesByTerm.get(term);
+
+			if (recoveredRecipesFromTerm) {
+				if (recipeSet.size > 0) {
+					let currentSet = new Set();
+					recoveredRecipesFromTerm.forEach((el) => { currentSet.add(el); });
+
+					currentSet = new Set([...currentSet].filter(x => recipeSet.has(x)));
+
+					if (currentSet.size > 0) {
+						recipeSet = currentSet;
+					}
+
+				} else {
+					recoveredRecipesFromTerm.forEach((el) => { recipeSet.add(el); });
+				}
+			}
+		}
+		return recipeSet;
+	}
+
 	constructor(td, sws) {
 		this.trainData = JSON.parse(fs.readFileSync(td, (e) => { console.error(e.toString()) }));
 		this.stopwordSet = new Set(JSON.parse(fs.readFileSync(sws, (e) => { console.error(e.toString()); })));
 
 		this.recipesMap = new Map();
 		this.reverseRecipesByIngredients = new Map(); // <int>
+		this.reverseRecipesByTerm = new Map(); // <int>
 		this.reverseRecipesByTime = new Array(); // {recipeId : <int>, time: <float>}
 		this.reverseRecipesByKcal = new Array(); // {recipeId : <int>, kcal : <float> }
 		this.reverseRecipesByPrice = new Array(); // {recipeId : <int>, price : <float>}
@@ -126,16 +154,42 @@ class CoolmidaNLU {
 
 		{
 			let recipes = JSON.parse(fs.readFileSync(`recipes.json`));
-			let count = 0;
 
 			for (let recipe of recipes) {
-				this.recipesMap.set(count, recipe);
+				this.recipesMap.set(recipe.id, recipe);
 
-				for (let ingredient of recipe.ingredients) {
+				this.tokenizePhrase(recipe.name).forEach((el) => {
+					let recoveredArray = this.reverseRecipesByTerm.get();
 
-				}
+					if (!recoveredArray) {
+						recoveredArray = this.reverseRecipesByTerm.set(el, []).get(el);
+					}
 
-				++count;
+					recoveredArray.push(recipe.id);
+
+				});
+
+				let accumulator = { price: 0, kcal: 0 };
+
+				recipe.ingredients.forEach((el) => {
+
+					this.tokenizePhrase(el.name).forEach((term) => {
+						let recoveredArray = this.reverseRecipesByIngredients.get();
+
+						if (!recoveredArray) {
+							recoveredArray = this.reverseRecipesByIngredients.set(term, []).get(term);
+						}
+
+						recoveredArray.push(recipe.id);
+					});
+
+
+				});
+
+				this.reverseRecipesByTime.push({ recipeId: recipe.id, time: recipe.avg_time });
+				this.reverseRecipesByKcal.push({ recipeId: recipe.id, kcal: accumulator.kcal });
+				this.reverseRecipesByPrice.push({ recipeId: recipe.i, price: accumulator.price });
+
 			}
 		}
 
