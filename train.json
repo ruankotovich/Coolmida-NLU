@@ -89,11 +89,14 @@
   "specification": {
     "time.minute": [
       "minuto",
-      "minutos"
+      "minutos",
+      "min",
+      "m"
     ],
     "time.hour": [
       "hora",
-      "horas"
+      "horas",
+      "h"
     ],
     "price_from": [
       "a partir de",
