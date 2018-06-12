@@ -123,20 +123,27 @@ class CoolmidaNLU {
 
 			let recoveredRecipesFromTerm = this.reverseRecipesByTerm.get(term);
 
+
 			if (recoveredRecipesFromTerm) {
+
 				if (recipeSet.size > 0) {
+
 					let currentSet = new Set();
+
 					recoveredRecipesFromTerm.forEach((el) => { currentSet.add(el); });
 
 					currentSet = new Set([...currentSet].filter(x => recipeSet.has(x)));
 
-					if (currentSet.size > 0) {
-						recipeSet = currentSet;
-					}
+					// if (currentSet.size > 0) {
+					recipeSet = currentSet;
+					// }
 
 				} else {
+
 					recoveredRecipesFromTerm.forEach((el) => { recipeSet.add(el); });
+
 				}
+
 			}
 		}
 		return recipeSet;
@@ -171,7 +178,7 @@ class CoolmidaNLU {
 				this.recipesMap.set(recipe.id, recipe);
 
 				this.tokenizePhrase(recipe.name).forEach((el) => {
-					let recoveredArray = this.reverseRecipesByTerm.get();
+					let recoveredArray = this.reverseRecipesByTerm.get(el);
 
 					if (!recoveredArray) {
 						recoveredArray = this.reverseRecipesByTerm.set(el, []).get(el);
@@ -185,8 +192,11 @@ class CoolmidaNLU {
 
 				recipe.ingredients.forEach((el) => {
 
-					this.tokenizePhrase(el.name).forEach((term) => {
-						let recoveredIngArray = this.reverseRecipesByIngredients.get();
+					let tokenized = this.tokenizePhrase(el || "");
+
+					tokenized.forEach((term) => {
+
+						let recoveredIngArray = this.reverseRecipesByIngredients.get(term);
 
 						if (!recoveredIngArray) {
 							recoveredIngArray = this.reverseRecipesByIngredients.set(term, []).get(term);
@@ -194,7 +204,7 @@ class CoolmidaNLU {
 
 						recoveredIngArray.push(recipe.id);
 
-						let recoveredTermArray = this.reverseRecipesByTerm.get();
+						let recoveredTermArray = this.reverseRecipesByTerm.get(term);
 
 						if (!recoveredTermArray) {
 							recoveredTermArray = this.reverseRecipesByTerm.set(term, []).get(term);
@@ -388,9 +398,7 @@ class CoolmidaNLU {
 		let searchCriteria = [];
 
 		intentions.has.forEach((ing) => {
-			console.log(`Term : ${ing.description}`);
 			searchCriteria.push(ing.description);
-
 		});
 
 		let recipeIds = this.recoverRecipesByTerm(this.tokenizePhrase(searchCriteria.join(" ")));
