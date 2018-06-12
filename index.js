@@ -16,6 +16,29 @@ const port = 6666;
 
 	console.log("Setting up routes...");
 
+	app.get('/nlu/intention', (req, res) => {
+
+		console.log(`/nlu/intention/`, req.query);
+
+		const input = Joi.validate(req.query, Joi.object().keys({
+			query: Joi.string().required()
+		}));
+
+		if (input.error) {
+			console.error(input.error.toString());
+			return res.status(422).send(input.error.toString());
+		} else {
+			try {
+				let processedInput = Coolmida.intentionDetect(input.value.query);
+				console.log(`Successfully returned`);
+				return res.status(200).send(processedInput);
+			} catch (err) {
+				console.error(err);
+				return res.status(500).send(err.toString());
+			}
+		}
+
+	});
 	app.get('/nlu/postag', (req, res) => {
 
 		console.log(`/nlu/postag/`, req.query);

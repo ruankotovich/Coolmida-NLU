@@ -38,9 +38,8 @@ class CoolmidaNLU {
 	}
 
 	splitOnTerms(w) {
-
-		console.log(`${this.tokenizePhrase(w.replace(/[$-/:-?{-~!"^_`\[\]]/g,"0xbreakx0")).join(" ")} 0xbreakx0`);
-		return `${this.tokenizePhrase(w.replace(/[$-/:-?{-~!"^_`\[\]]/g,"0xbreakx0")).join(" ")} 0xbreakx0`.split(this.phraseSplitterRegex).filter((e)=>{
+		w = w.replace(/(\d+)/,"0xbreakx0$10xbreakx0");
+		return `${this.tokenizePhrase(w.replace(/[$-/:-?{-~!"^_`\[\]]/g, "0xbreakx0")).join(" ")} 0xbreakx0`.split(this.phraseSplitterRegex).filter((e) => {
 			return e;
 		});
 	}
@@ -114,7 +113,6 @@ class CoolmidaNLU {
 
 		let brokenPieces = this.splitOnTerms(w.replaceAll("\\$", "s").replaceAll("\\^", "\@"));
 
-		console.log(brokenPieces);
 		brokenPieces.forEach((phrase) => {
 			let purifiedTokens = this.tokenizePhrase(phrase);
 			let parsedInput = purifiedTokens.join(" ");
@@ -128,60 +126,57 @@ class CoolmidaNLU {
 	}
 
 	intentionDetect(w) {
-		let lastSched = {};
+		let lastSched;
+		let lastMeasure = {};
 
 		let user = {
-			time: Infinity,
-			budget: Infinity,
+			time: undefined,
+			budget: undefined,
+			budgetStyle: "UpperBound",
+			maxKcal: undefined,
 			has: []
 		};
 
 		for (let tag of this.posTagging(w)) {
 
-			let useCurrentClass = false;
-
-			if (tag.meaning) {
-				if (tag.clazz.label === "value.numeric") {
-					useCurrentClass = true;
-				}
+			if (tag.clazz.meaning && !tag.clazz.label.startsWith("value")) {
+				user.has.push({ ingredient: tag.clazz.meaning, quantity: lastMeasure.value, measureUnit: lastMeasure.measureUnit });
+				lastMeasure = {};
 			}
 
-			if (useCurrentClass) {
+			switch (tag.clazz.label) {
+				case "value.money":
+					if (lastSched.clazz.label == "value.numeric") { user.budget = parseInt(lastSched.clazz.meaning); }
+					break;
 
-				switch (tag.clazz.label) {
-					case "value.money": { } break;
-					case "value.volume.liter": { } break;
-					case "value.volume.mililiter": { } break;
-					case "value.weight.miligram": { } break;
-					case "value.weight.kilogram": { } break;
-					case "value.weight.gram": { } break;
-					case "value.volume.tea_cup": { } break;
-					case "value.volume.tea_spoon": { } break;
-					case "speed.fast": { } break;
-					case "speed.normal": { } break;
-					case "specification.price_from": { } break;
-					case "specification.price_until": { } break;
-					case "specification.want": { } break;
+				case "value.volume.liter":
+				case "value.volume.mililiter":
+				case "value.weight.miligram":
+				case "value.weight.kilogram":
+				case "value.weight.gram":
+				case "value.volume.tea_cup":
+				case "value.volume.tea_spoon":
+					if (lastSched.clazz.label == "value.numeric") {
+						lastMeasure.measureUnit = tag.clazz.label;
+						lastMeasure.value = lastSched.clazz.meaning;
+					}
+					break;
 
+				case "speed.fast":
+				case "speed.normal": {
+					if (!user.time) {
+						user.time = tag.clazz.label;
+					}
 				}
-			} else {
-				switch (lastSched) {
-					case "value.money": { } break;
-					case "value.volume.liter": { } break;
-					case "value.volume.mililiter": { } break;
-					case "value.weight.miligram": { } break;
-					case "value.weight.kilogram": { } break;
-					case "value.weight.gram": { } break;
-					case "value.volume.tea_cup": { } break;
-					case "value.volume.tea_spoon": { } break;
-					case "speed.fast": { } break;
-					case "speed.normal": { } break;
-					case "specification.price_from": { } break;
-					case "specification.price_until": { } break;
-					case "specification.want": { } break;
-				}
+					break;
+				case "specification.price_from": { user.budgetStyle = "LowerBound" } break;
+				case "specification.price_until": { user.budgetStyle = "UpperBound" } break;
+				case undefined: { } break;
 			}
+
+			lastSched = tag;
 		}
+		return user;
 	}
 
 	train() {
@@ -200,6 +195,7 @@ class CoolmidaNLU {
 		});
 
 		this.phraseSplitterRegex = this.wordCollectionToRegex(phraseSeparators);
+		console.log(this.phraseSplitterRegex);
 		classifier.train();
 	}
 };
@@ -209,5 +205,6 @@ let nluModule = undefined;
 module.exports.NLU = {
 	train: (trainData, stopwordSet) => { if (nluModule) { delete nluModule; } nluModule = new CoolmidaNLU(trainData, stopwordSet); },
 	classify: (p) => { if (nluModule) { return nluModule.classify(p); } else { throw "Cannot classify without train."; } },
-	posTagging: (p) => { if (nluModule) { return nluModule.posTagging(p); } else { throw "Cannot tag without train."; } }
+	posTagging: (p) => { if (nluModule) { return nluModule.posTagging(p); } else { throw "Cannot tag without train."; } },
+	intentionDetect: (p) => { if (nluModule) { return nluModule.intentionDetect(p); } else { throw "Cannot detect intentions without train."; } }
 };
