@@ -332,8 +332,9 @@ class CoolmidaNLU {
 
 		let user = {
 			time: undefined,
+			timeMax: undefined,
 			budget: undefined,
-			budgetStyle: "UpperBound",
+			budgetStyle: undefined,
 			maxKcal: undefined,
 			has: []
 		};
@@ -372,11 +373,12 @@ class CoolmidaNLU {
 					break;
 				case "specification.price_from": { user.budgetStyle = "LowerBound" } break;
 				case "specification.price_until": { user.budgetStyle = "UpperBound" } break;
-				case undefined: { } break;
+				case "specification.time.minute": { if (lastSched.clazz.label === "value.numeric") { user.timeValue = lastSched.clazz.meaning; } } break;
+				case "specification.time.hour": { if (lastSched.clazz.label === "value.numeric") { user.timeValue = lastSched.clazz.meaning * 60; } } break;
 			}
-
 			lastSched = tag;
 		}
+
 		return user;
 	}
 
@@ -397,7 +399,9 @@ class CoolmidaNLU {
 		recipeIds.forEach((key) => {
 			let recoveredRecipe = this.recipesMap.get(key);
 			if (recoveredRecipe) {
-				recipes.push(recoveredRecipe);
+				if (!intentions.timeValue || intentions.timeValue >= recoveredRecipe.avg_time) {
+					recipes.push(recoveredRecipe);
+				}
 			}
 		});
 

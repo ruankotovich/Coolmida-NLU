@@ -40,6 +40,7 @@ const port = 6666;
 			}
 
 		});
+
 		app.get('/nlu/search', (req, res) => {
 
 			console.log(`/nlu/search/`, req.query);
@@ -63,6 +64,7 @@ const port = 6666;
 			}
 
 		});
+
 		app.get('/nlu/postag', (req, res) => {
 
 			console.log(`/nlu/postag/`, req.query);
