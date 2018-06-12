@@ -9,7 +9,7 @@ const tokenizer = new natural.OrthographyTokenizer({ language: "pt" })
 const classifier = new natural.BayesClassifier();
 const stemmer = natural.PorterStemmerPt;
 const str$distance = natural.LevenshteinDistance;
-const SERVER_URL = process.env.ENVIRONMENT === "remote" ? `https://coolmida.onthewifi.com/api/recipe/` : "http://127.0.0.1:8000";
+const SERVER_URL = process.env.ENVIRONMENT === "remote" ? `https://coolmida.onthewifi.com/api/recipe/` : "http://localhost:8000/api/recipe";
 console.log("Using SERVER_URL = ", SERVER_URL);
 
 String.prototype.replaceAll = function (search, replacement) {
