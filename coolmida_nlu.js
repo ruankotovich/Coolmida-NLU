@@ -38,7 +38,7 @@ class CoolmidaNLU {
 	}
 
 	splitOnTerms(w) {
-		w = w.replace(/(\d+)/,"0xbreakx0$10xbreakx0");
+		w = w.replace(/(\d+)/g,"0xbreakx0$10xbreakx0").replace(/ e /g,"0xbreakx0");
 		return `${this.tokenizePhrase(w.replace(/[$-/:-?{-~!"^_`\[\]]/g, "0xbreakx0")).join(" ")} 0xbreakx0`.split(this.phraseSplitterRegex).filter((e) => {
 			return e;
 		});

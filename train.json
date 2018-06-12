@@ -53,12 +53,6 @@
       "g",
       "grama",
       "gramas"
-    ],
-    "volume.tea_cup": [
-      "xícara de chá"
-    ],
-    "volume.tea_spoon": [
-      "colher de chá"
     ]
   },
   "speed": {
@@ -67,6 +61,8 @@
       "rapido",
       "rápido",
       "pouco tempo",
+      "tenho pouco tempo",
+      "não tenho muito tempo",
       "não muito tempo",
       "fast",
       "fest",
@@ -86,7 +82,6 @@
       "vou demitido"
     ],
     "normal": [
-      "tempo",
       "suave",
       "estou bem de tempo"
     ]
