@@ -2,12 +2,15 @@ const natural = require('natural');
 const fs = require('fs');
 const diacritics = require('diacritics');
 const Numbermap = require('./numbermap').Numbermap;
+const requestPromise = require('request-promise');
 let StemmedNumbermap = {};
 
 const tokenizer = new natural.OrthographyTokenizer({ language: "pt" })
 const classifier = new natural.BayesClassifier();
 const stemmer = natural.PorterStemmerPt;
 const str$distance = natural.LevenshteinDistance;
+const SERVER_URL = process.env.ENVIRONMENT === "remote" ? `https://coolmida.onthewifi.com/api/recipe/` : "http://127.0.0.1:8000";
+console.log("Using SERVER_URL = ", SERVER_URL);
 
 String.prototype.replaceAll = function (search, replacement) {
 	var target = this;
@@ -116,7 +119,6 @@ class CoolmidaNLU {
 
 	recoverRecipesByTerm(termArray) {
 		let recipeSet = new Set();
-
 		for (let term of termArray) {
 
 			let recoveredRecipesFromTerm = this.reverseRecipesByTerm.get(term);
@@ -150,10 +152,20 @@ class CoolmidaNLU {
 		this.reverseRecipesByTime = new Array(); // {recipeId : <int>, time: <float>}
 		this.reverseRecipesByKcal = new Array(); // {recipeId : <int>, kcal : <float> }
 		this.reverseRecipesByPrice = new Array(); // {recipeId : <int>, price : <float>}
-		// POPULATE
 
-		{
-			let recipes = JSON.parse(fs.readFileSync(`recipes.json`));
+		this.train();
+	}
+
+	async populateRecipes() {
+		try {
+			// let recipes = JSON.parse(fs.readFileSync(`recipes.json`));
+			let recipes = await requestPromise(
+				{
+					method: 'GET',
+					json: true,
+					uri: SERVER_URL
+				}
+			);
 
 			for (let recipe of recipes) {
 				this.recipesMap.set(recipe.id, recipe);
@@ -174,13 +186,21 @@ class CoolmidaNLU {
 				recipe.ingredients.forEach((el) => {
 
 					this.tokenizePhrase(el.name).forEach((term) => {
-						let recoveredArray = this.reverseRecipesByIngredients.get();
+						let recoveredIngArray = this.reverseRecipesByIngredients.get();
 
-						if (!recoveredArray) {
-							recoveredArray = this.reverseRecipesByIngredients.set(term, []).get(term);
+						if (!recoveredIngArray) {
+							recoveredIngArray = this.reverseRecipesByIngredients.set(term, []).get(term);
 						}
 
-						recoveredArray.push(recipe.id);
+						recoveredIngArray.push(recipe.id);
+
+						let recoveredTermArray = this.reverseRecipesByTerm.get();
+
+						if (!recoveredTermArray) {
+							recoveredTermArray = this.reverseRecipesByTerm.set(term, []).get(term);
+						}
+
+						recoveredTermArray.push(recipe.id);
 					});
 
 
@@ -191,14 +211,16 @@ class CoolmidaNLU {
 				this.reverseRecipesByPrice.push({ recipeId: recipe.i, price: accumulator.price });
 
 			}
+
+
+			this.reverseRecipesByTime.sort((a, b) => { return a.time - b.time; });
+			this.reverseRecipesByKcal.sort((a, b) => { return a.kcal - b.kcal });
+			this.reverseRecipesByPrice.sort((a, b) => { return a.price - b.price });
+
+			return Promise.resolve();
+		} catch (ex) {
+			return Promise.reject(ex);
 		}
-
-		// END POPULATE
-		this.reverseRecipesByTime.sort((a, b) => { return a.time - b.time; });
-		this.reverseRecipesByKcal.sort((a, b) => { return a.kcal - b.kcal });
-		this.reverseRecipesByPrice.sort((a, b) => { return a.price - b.price });
-
-		this.train();
 	}
 
 	tokenizePhrase(ph, mild = false) {
@@ -319,7 +341,7 @@ class CoolmidaNLU {
 		for (let tag of this.posTagging(w)) {
 
 			if (tag.clazz.meaning && !tag.clazz.label.startsWith("value")) {
-				user.has.push({ ingredient: tag.clazz.meaning, quantity: lastMeasure.value, measureUnit: lastMeasure.measureUnit });
+				user.has.push({ description: tag.clazz.meaning, quantity: lastMeasure.value, measureUnit: lastMeasure.measureUnit });
 				lastMeasure = {};
 			}
 
@@ -358,6 +380,30 @@ class CoolmidaNLU {
 		return user;
 	}
 
+	search(phrase) {
+		let intentions = this.intentionDetect(phrase);
+		console.log(`Intention : ${JSON.stringify(intentions)}`);
+		let searchCriteria = [];
+
+		intentions.has.forEach((ing) => {
+			console.log(`Term : ${ing.description}`);
+			searchCriteria.push(ing.description);
+
+		});
+
+		let recipeIds = this.recoverRecipesByTerm(this.tokenizePhrase(searchCriteria.join(" ")));
+		let recipes = [];
+
+		recipeIds.forEach((key) => {
+			let recoveredRecipe = this.recipesMap.get(key);
+			if (recoveredRecipe) {
+				recipes.push(recoveredRecipe);
+			}
+		});
+
+		return recipes;
+	}
+
 	train() {
 		let phraseSeparators = [];
 
@@ -381,8 +427,9 @@ class CoolmidaNLU {
 let nluModule = undefined;
 
 module.exports.NLU = {
-	train: (trainData, stopwordSet) => { if (nluModule) { delete nluModule; } nluModule = new CoolmidaNLU(trainData, stopwordSet); },
+	train: async (trainData, stopwordSet) => { if (nluModule) { delete nluModule; } nluModule = new CoolmidaNLU(trainData, stopwordSet); await nluModule.populateRecipes(); },
 	classify: (p) => { if (nluModule) { return nluModule.classify(p); } else { throw "Cannot classify without train."; } },
 	posTagging: (p) => { if (nluModule) { return nluModule.posTagging(p); } else { throw "Cannot tag without train."; } },
-	intentionDetect: (p) => { if (nluModule) { return nluModule.intentionDetect(p); } else { throw "Cannot detect intentions without train."; } }
+	intentionDetect: (p) => { if (nluModule) { return nluModule.intentionDetect(p); } else { throw "Cannot detect intentions without train."; } },
+	search: (p) => { if (nluModule) { return nluModule.search(p); } else { throw "Cannot search intentions without train."; } }
 };
