@@ -10,6 +10,8 @@ const classifier = new natural.BayesClassifier();
 const stemmer = natural.PorterStemmerPt;
 const str$distance = natural.LevenshteinDistance;
 const SERVER_URL = process.env.ENVIRONMENT === "remote" ? `https://coolmida.onthewifi.com/api/recipe/` : "http://localhost:8000/api/recipe";
+const USE_FILE = process.env.USE_FILE === "true";
+
 console.log("Using SERVER_URL = ", SERVER_URL);
 
 String.prototype.replaceAll = function (search, replacement) {
@@ -165,8 +167,7 @@ class CoolmidaNLU {
 
 	async populateRecipes() {
 		try {
-			// let recipes = JSON.parse(fs.readFileSync(`recipes.json`));
-			let recipes = await requestPromise(
+			let recipes = USE_FILE ? JSON.parse(fs.readFileSync(`recipes.json`)) : await requestPromise(
 				{
 					method: 'GET',
 					json: true,
@@ -233,6 +234,13 @@ class CoolmidaNLU {
 		}
 	}
 
+	stemTerm(term) {
+		if (term.length > 3) {
+			return stemmer.stem(term);
+		}
+		return term;
+	}
+
 	tokenizePhrase(ph, mild = false) {
 		let purifiedTokens = [];
 
@@ -241,7 +249,7 @@ class CoolmidaNLU {
 		tokenizer.tokenize(ph).forEach((token) => {
 
 			if (!(this.stopwordSet.has(token))) {
-				purifiedTokens.push(stemmer.stem(token.trim()));
+				purifiedTokens.push(this.stemTerm(token.trim()));
 			}
 		})
 
@@ -249,7 +257,7 @@ class CoolmidaNLU {
 	}
 
 	splitOnTerms(w) {
-		w = w.replace(/(\d+)/g, "0xbreakx0$10xbreakx0").replace(/ e /g, "0xbreakx0");
+		w = w.replace(/(\d+)/g, " 0xbreakx0$10xbreakx0 ").replace(/ e /g, " 0xbreakx0 ");
 		return `${this.tokenizePhrase(w.replace(/[$-/:-?{-~!"^_`\[\]]/g, "0xbreakx0")).join(" ")} 0xbreakx0`.split(this.phraseSplitterRegex).filter((e) => {
 			return e;
 		});
