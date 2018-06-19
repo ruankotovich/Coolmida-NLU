@@ -125,6 +125,12 @@
       "tenho comigo",
       "comigo tem"
     ],
+    "negation":[
+      "sem",
+      "não quero",
+      "não",
+      "que não tenha"
+    ],
     "want": [
       "quero",
       "queria",

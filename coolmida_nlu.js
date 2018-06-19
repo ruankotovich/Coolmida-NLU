@@ -3,7 +3,7 @@ const fs = require('fs');
 const diacritics = require('diacritics');
 const Numbermap = require('./numbermap').Numbermap;
 const requestPromise = require('request-promise');
-let StemmedNumbermap = {};
+// let StemmedNumbermap = {};
 
 const tokenizer = new natural.OrthographyTokenizer({ language: "pt" })
 const classifier = new natural.BayesClassifier();
@@ -271,18 +271,18 @@ class CoolmidaNLU {
 
 			let seeker = { found: false, value: NaN, smallerDistance: Infinity };
 
-			Object.keys(StemmedNumbermap).forEach((numb) => {
+			Object.keys(Numbermap).forEach((numb) => {
 
 				let dist;
 
 				if ((dist = str$distance(numb, phrase.join(" "))) <= 1) {
 					if (dist < seeker.smallerDistance) {
-						seeker = { found: true, value: StemmedNumbermap[numb], smallerDistance: dist };
+						seeker = { found: true, value: Numbermap[numb], smallerDistance: dist };
 					}
 				}
 			});
 
-			if (seeker.found) {
+			if (seeker.found && (phrase.length < 3 ? seeker.smallerDistance == 0 : true)) {
 				return { "label": "value.numeric", "value": seeker.smallerDistance, "meaning": seeker.value };
 			}
 
@@ -306,7 +306,7 @@ class CoolmidaNLU {
 			let value = Numbermap[k];
 
 			k = this.tokenizePhrase(k, true).join(" ");
-			StemmedNumbermap[k] = value;
+			// StemmedNumbermap[k] = value;
 
 			if (k.length > 0) {
 				regexWords.push(" " + k.replaceAll(" ", " +") + " ");
@@ -340,7 +340,6 @@ class CoolmidaNLU {
 				out.push({ poi: `${parsedInput}`, clazz: this.classify(purifiedTokens) });
 			}
 		});
-
 		return out;
 	}
 
@@ -354,13 +353,17 @@ class CoolmidaNLU {
 			budget: undefined,
 			budgetStyle: undefined,
 			maxKcal: undefined,
-			has: []
+			has: [],
+			dont_want: []
 		};
+
+		let currentList = user.has;
 
 		for (let tag of this.posTagging(w)) {
 
 			if (tag.clazz.meaning && !tag.clazz.label.startsWith("value")) {
-				user.has.push({ description: tag.clazz.meaning, quantity: lastMeasure.value, measureUnit: lastMeasure.measureUnit });
+				currentList.push({ description: tag.clazz.meaning, quantity: lastMeasure.value, measureUnit: lastMeasure.measureUnit });
+				currentList = user.has;
 				lastMeasure = {};
 			}
 
@@ -381,6 +384,10 @@ class CoolmidaNLU {
 						lastMeasure.value = lastSched.clazz.meaning;
 					}
 					break;
+
+				case "specification.negation": {
+					currentList = user.dont_want;
+				} break;
 
 				case "speed.fast":
 				case "speed.normal": {
@@ -403,13 +410,22 @@ class CoolmidaNLU {
 	search(phrase) {
 		let intentions = this.intentionDetect(phrase);
 		console.log(`Intention : ${JSON.stringify(intentions)}`);
+
 		let searchCriteria = [];
+		let pruneCriteria = [];
 
 		intentions.has.forEach((ing) => {
 			searchCriteria.push(ing.description);
 		});
 
-		let recipeIds = this.recoverRecipesByTerm(this.tokenizePhrase(searchCriteria.join(" ")));
+		intentions.dont_want.forEach((ing) => {
+			pruneCriteria.push(ing.description);
+		});
+
+		let recipeIds = [...this.recoverRecipesByTerm(this.tokenizePhrase(searchCriteria.join(" ")))].filter(
+			el => !(this.recoverRecipesByTerm(this.tokenizePhrase(pruneCriteria.join(" ")))).has(el)
+		);
+
 		let recipes = [];
 
 		recipeIds.forEach((key) => {
@@ -423,6 +439,7 @@ class CoolmidaNLU {
 
 		return recipes;
 	}
+
 
 	train() {
 		let phraseSeparators = [];
