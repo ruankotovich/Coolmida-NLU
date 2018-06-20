@@ -95,7 +95,14 @@ async function start() {
             let currentItem = { name: realName, price: parseFloat(priceClassifier.classify(ingredient)), kcal: parseFloat(kcalClassifier.classify(ingredient)), unit: unitClassifier.classify(realName) };
             // process.stdout.write('\033c');
             console.log(`\nRecipes : ${stepRecipe} of ${recipes.length}\nIngredients : ${stepIngredient} of ${recipe.ingredients.length}\nSending ${JSON.stringify(currentItem)}`);
-            pushAPI(currentItem, recipe);
+
+            await new Promise((res, rej) => {
+                setTimeout(() => {
+                    pushAPI(currentItem, recipe);
+                    res();
+                }, 400);
+            });
+
             ++stepIngredient;
         }
         ++stepRecipe;
