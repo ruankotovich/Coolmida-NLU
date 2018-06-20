@@ -89,6 +89,13 @@
     ]
   },
   "specification": {
+    "kcal": [
+      "calorias",
+      "kcal",
+      "kcals",
+      "caloria",
+      "cal"
+    ],
     "time.minute": [
       "minuto",
       "minutos",
@@ -125,7 +132,7 @@
       "tenho comigo",
       "comigo tem"
     ],
-    "negation":[
+    "negation": [
       "sem",
       "não quero",
       "não",

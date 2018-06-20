@@ -156,11 +156,13 @@ class CoolmidaNLU {
 		this.stopwordSet = new Set(JSON.parse(fs.readFileSync(sws, (e) => { console.error(e.toString()); })));
 
 		this.recipesMap = new Map();
+		this.ingredientsMap = new Map();
 		this.reverseRecipesByIngredients = new Map(); // <int>
 		this.reverseRecipesByTerm = new Map(); // <int>
 		this.reverseRecipesByTime = new Array(); // {recipeId : <int>, time: <float>}
 		this.reverseRecipesByKcal = new Array(); // {recipeId : <int>, kcal : <float> }
 		this.reverseRecipesByPrice = new Array(); // {recipeId : <int>, price : <float>}
+		this.internalRecipeIngredient = new Map(); // recipe => {"ingredient":[]}
 
 		this.train();
 	}
@@ -175,7 +177,12 @@ class CoolmidaNLU {
 				}
 			);
 
+			let curIngredientId = 0;
+
 			for (let recipe of recipes) {
+
+				this.internalRecipeIngredient[recipe.id] = {};
+
 				this.recipesMap.set(recipe.id, recipe);
 
 				this.tokenizePhrase(recipe.name).forEach((el) => {
@@ -191,11 +198,18 @@ class CoolmidaNLU {
 
 				let accumulator = { price: 0, kcal: 0 };
 
+
 				recipe.ingredients.forEach((el) => {
 
 					let tokenized = this.tokenizePhrase(el || "");
 
+					this.ingredientsMap[curIngredientId] = el;
+
 					tokenized.forEach((term) => {
+
+						let curInternalRecipeIngredient = this.internalRecipeIngredient[recipe.id][term] || new Set();
+						curInternalRecipeIngredient.add(curIngredientId);
+						this.internalRecipeIngredient[recipe.id][term] = curInternalRecipeIngredient;
 
 						let recoveredIngArray = this.reverseRecipesByIngredients.get(term);
 
@@ -214,7 +228,7 @@ class CoolmidaNLU {
 						recoveredTermArray.push(recipe.id);
 					});
 
-
+					++curIngredientId;
 				});
 
 				this.reverseRecipesByTime.push({ recipeId: recipe.id, time: recipe.avg_time });
@@ -432,12 +446,33 @@ class CoolmidaNLU {
 			let recoveredRecipe = this.recipesMap.get(key);
 			if (recoveredRecipe) {
 				if (!intentions.timeValue || intentions.timeValue >= recoveredRecipe.avg_time) {
-					recipes.push(recoveredRecipe);
+					let curRecipe = Object.assign({}, recoveredRecipe);
+					let having = new Set();
+
+					searchCriteria.forEach((ing) => {
+						let findIngIds = this.internalRecipeIngredient[curRecipe.id][ing];
+						if (findIngIds) {
+							findIngIds.forEach((el) => {
+								having.add(el);
+							});
+						}
+					});
+
+					curRecipe.having = [];
+					having.forEach((el) => { curRecipe.having.push(this.ingredientsMap[el]) });
+
+					curRecipe.completeness = {};
+					curRecipe.completeness.value = parseFloat(curRecipe.having.length) / parseFloat(curRecipe.ingredients.length) || 0.0;
+					curRecipe.completeness.prettyString = `${(curRecipe.completeness.value * 100.0).toFixed(1)}%`;
+
+					recipes.push(curRecipe);
 				}
 			}
 		});
 
-		return recipes;
+
+		return recipes.sort((a, b) => { return b.completeness.value - a.completeness.value });
+
 	}
 
 
