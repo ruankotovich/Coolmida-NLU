@@ -121,7 +121,7 @@ async function pushAPI(currentItem, recipe) {
         method: 'POST',
         uri: 'https://coolmida.onthewifi.com/api/recipe-ingredient/',
         body: {
-            ingredient: ingredientReturn.id,
+            ingredient_id: ingredientReturn.id,
             recipe: recipe.id,
             quantity: currentItem.unit.value
         },
