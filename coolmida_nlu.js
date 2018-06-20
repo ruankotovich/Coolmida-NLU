@@ -156,6 +156,7 @@ class CoolmidaNLU {
 
 		this.recipesMap = new Map();
 		this.ingredientsMap = new Map();
+		this.ingredientsWordcountMap = new Map();
 		this.reverseRecipesByIngredients = new Map(); // <int>
 		this.reverseRecipesByTerm = new Map(); // <int>
 		this.reverseRecipesByTime = new Array(); // {recipeId : <int>, time: <float>}
@@ -197,14 +198,17 @@ class CoolmidaNLU {
 
 				let accumulator = { price: 0, kcal: 0 };
 
+				recipe.ingredientsBelong = new Set();
 
 				recipe.ingredients.forEach((el) => {
 
+					let wordList = new Set();
 					let tokenized = this.tokenizePhrase(el || "");
 
 					this.ingredientsMap[curIngredientId] = el;
 
 					tokenized.forEach((term) => {
+						wordList.add(term);
 
 						let curInternalRecipeIngredient = this.internalRecipeIngredient[recipe.id][term] || new Set();
 						curInternalRecipeIngredient.add(curIngredientId);
@@ -227,6 +231,10 @@ class CoolmidaNLU {
 						recoveredTermArray.push(recipe.id);
 					});
 
+					this.ingredientsWordcountMap[curIngredientId] = wordList.size;
+
+					recipe.ingredientsBelong.add(curIngredientId);
+
 					++curIngredientId;
 				});
 
@@ -248,7 +256,7 @@ class CoolmidaNLU {
 	}
 
 	stemTerm(term) {
-		if (term.length > 3) {
+		if (term.length > 6) {
 			return stemmer.stem(term);
 		}
 		return term;
@@ -446,19 +454,29 @@ class CoolmidaNLU {
 			if (recoveredRecipe) {
 				if (!intentions.timeValue || intentions.timeValue >= recoveredRecipe.avg_time) {
 					let curRecipe = Object.assign({}, recoveredRecipe);
-					let having = new Set();
+					let having = {};
 
 					this.tokenizePhrase(searchCriteria.join(" ")).forEach((ing) => {
 						let findIngIds = this.internalRecipeIngredient[curRecipe.id][ing];
 						if (findIngIds) {
 							findIngIds.forEach((el) => {
-								having.add(el);
+								having[el] = ((having[el] || 0) + 1);
 							});
 						}
 					});
 
 					curRecipe.having = [];
-					having.forEach((el) => { curRecipe.having.push(this.ingredientsMap[el]) });
+					curRecipe.notHaving = [];
+
+					// having
+					Object.keys(having).forEach((el) => {
+						if (parseFloat(having[el]) / parseFloat(this.ingredientsWordcountMap[el]) > 0.2) { curRecipe.having.push(this.ingredientsMap[el]) }
+					});
+
+					// notHaving
+					[...curRecipe.ingredientsBelong].filter(x => (having[x] === undefined)).forEach((el) => {
+						curRecipe.notHaving.push(this.ingredientsMap[el]);
+					});
 
 					curRecipe.completeness = {};
 					curRecipe.completeness.value = parseFloat(curRecipe.having.length) / parseFloat(curRecipe.ingredients.length) || 0.0;
