@@ -125,7 +125,6 @@ class CoolmidaNLU {
 
 			let recoveredRecipesFromTerm = this.reverseRecipesByTerm.get(term);
 
-
 			if (recoveredRecipesFromTerm) {
 
 				if (recipeSet.size > 0) {
@@ -136,9 +135,9 @@ class CoolmidaNLU {
 
 					currentSet = new Set([...currentSet].filter(x => recipeSet.has(x)));
 
-					// if (currentSet.size > 0) {
-					recipeSet = currentSet;
-					// }
+					if (currentSet.size > 0) {
+						recipeSet = currentSet;
+					}
 
 				} else {
 
@@ -449,7 +448,7 @@ class CoolmidaNLU {
 					let curRecipe = Object.assign({}, recoveredRecipe);
 					let having = new Set();
 
-					searchCriteria.forEach((ing) => {
+					this.tokenizePhrase(searchCriteria.join(" ")).forEach((ing) => {
 						let findIngIds = this.internalRecipeIngredient[curRecipe.id][ing];
 						if (findIngIds) {
 							findIngIds.forEach((el) => {
@@ -470,9 +469,7 @@ class CoolmidaNLU {
 			}
 		});
 
-
 		return recipes.sort((a, b) => { return b.completeness.value - a.completeness.value });
-
 	}
 
 
