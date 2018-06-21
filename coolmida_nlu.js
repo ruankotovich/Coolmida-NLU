@@ -431,7 +431,7 @@ class CoolmidaNLU {
 	search(phrase) {
 		let intentions = this.intentionDetect(phrase);
 
-		if(!intentions.timeValue && intentions.time === "speed.fast"){
+		if (!intentions.timeValue && intentions.time === "speed.fast") {
 			intentions.timeValue = 20;
 		}
 
@@ -448,9 +448,23 @@ class CoolmidaNLU {
 			pruneCriteria.push(ing.description);
 		});
 
-		let recipeIds = [...this.recoverRecipesByTerm(this.tokenizePhrase(searchCriteria.join(" ")))].filter(
-			el => !(this.recoverRecipesByTerm(this.tokenizePhrase(pruneCriteria.join(" ")))).has(el)
-		);
+		let recipeIds;
+		if (searchCriteria.length) {
+			recipeIds = [...this.recoverRecipesByTerm(this.tokenizePhrase(searchCriteria.join(" ")))].filter(
+				el => !(this.recoverRecipesByTerm(this.tokenizePhrase(pruneCriteria.join(" ")))).has(el)
+			);
+		} else if (intentions.budget || intentions.maxKcal || intentions.time) {
+			recipeIds = (() => {
+				let vect = [];
+
+				this.recipesMap.forEach((val, key, map) => {
+					vect.push(key);
+				});
+
+				return vect;
+			})();
+
+		}
 
 		let recipes = [];
 
@@ -498,7 +512,13 @@ class CoolmidaNLU {
 			}
 		});
 
-		return recipes.sort((a, b) => { return b.completeness.value - a.completeness.value });
+		return recipes.sort((a, b) => {
+			let
+				value = b.completeness.value - a.completeness.value;
+				value = value != 0 ? value : a.price_sum - b.price_sum;
+				value = value != 0 ? value : a.kcal_sum - a.kcal_sum;
+			return value;
+		});
 	}
 
 
