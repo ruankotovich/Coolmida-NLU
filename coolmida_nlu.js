@@ -478,7 +478,6 @@ class CoolmidaNLU {
 						if (parseFloat(having[el]) / parseFloat(this.ingredientsWordcountMap[el]) > 0.2) { curRecipe.having.push(this.ingredientsMap[el].ingredient.name) }
 					});
 
-
 					let priceAccumulator = 0;
 
 					// notHaving
