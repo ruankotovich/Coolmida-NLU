@@ -177,7 +177,6 @@ class CoolmidaNLU {
 				}
 			);
 
-			let curIngredientId = 0;
 
 			for (let recipe of recipes) {
 
@@ -200,10 +199,12 @@ class CoolmidaNLU {
 
 				recipe.ingredientsBelong = new Set();
 
-				recipe.ingredients.forEach((el) => {
+				recipe.recipeingredient_set.forEach((el) => {
+
+					let curIngredientId = el.ingredient.id;
 
 					let wordList = new Set();
-					let tokenized = this.tokenizePhrase(el || "");
+					let tokenized = this.tokenizePhrase(el.ingredient.name || "");
 
 					this.ingredientsMap[curIngredientId] = el;
 
@@ -234,8 +235,6 @@ class CoolmidaNLU {
 					this.ingredientsWordcountMap[curIngredientId] = wordList.size;
 
 					recipe.ingredientsBelong.add(curIngredientId);
-
-					++curIngredientId;
 				});
 
 				this.reverseRecipesByTime.push({ recipeId: recipe.id, time: recipe.avg_time });
@@ -420,6 +419,7 @@ class CoolmidaNLU {
 				case "specification.price_from": { user.budgetStyle = "LowerBound" } break;
 				case "specification.price_until": { user.budgetStyle = "UpperBound" } break;
 				case "specification.time.minute": { if (lastSched.clazz.label === "value.numeric") { user.timeValue = lastSched.clazz.meaning; } } break;
+				case "specification.kcal": { if (lastSched.clazz.label === "value.numeric") { user.maxKcal = lastSched.clazz.meaning; } } break;
 				case "specification.time.hour": { if (lastSched.clazz.label === "value.numeric") { user.timeValue = lastSched.clazz.meaning * 60; } } break;
 			}
 			lastSched = tag;
@@ -452,8 +452,9 @@ class CoolmidaNLU {
 		recipeIds.forEach((key) => {
 			let recoveredRecipe = this.recipesMap.get(key);
 			if (recoveredRecipe) {
-				if (!intentions.timeValue || intentions.timeValue >= recoveredRecipe.avg_time) {
+				if ((!intentions.timeValue || intentions.timeValue >= recoveredRecipe.avg_time) && (!intentions.maxKcal || recoveredRecipe.kcal_sum <= intentions.maxKcal)) {
 					let curRecipe = Object.assign({}, recoveredRecipe);
+
 					let having = {};
 
 					this.tokenizePhrase(searchCriteria.join(" ")).forEach((ing) => {
@@ -470,19 +471,26 @@ class CoolmidaNLU {
 
 					// having
 					Object.keys(having).forEach((el) => {
-						if (parseFloat(having[el]) / parseFloat(this.ingredientsWordcountMap[el]) > 0.2) { curRecipe.having.push(this.ingredientsMap[el]) }
+						if (parseFloat(having[el]) / parseFloat(this.ingredientsWordcountMap[el]) > 0.2) { curRecipe.having.push(this.ingredientsMap[el].ingredient.name) }
 					});
+
+
+					let priceAccumulator = 0;
 
 					// notHaving
 					[...curRecipe.ingredientsBelong].filter(x => (having[x] === undefined)).forEach((el) => {
-						curRecipe.notHaving.push(this.ingredientsMap[el]);
+						curRecipe.notHaving.push(this.ingredientsMap[el].ingredient.name);
+						priceAccumulator += parseFloat(this.ingredientsMap[el].ingredient.avg_price);
 					});
 
 					curRecipe.completeness = {};
 					curRecipe.completeness.value = parseFloat(curRecipe.having.length) / parseFloat(curRecipe.ingredients.length) || 0.0;
 					curRecipe.completeness.prettyString = `${(curRecipe.completeness.value * 100.0).toFixed(1)}%`;
 
-					recipes.push(curRecipe);
+					if (!intentions.budget || intentions.budget >= priceAccumulator) {
+						recipes.push(curRecipe);
+					}
+
 				}
 			}
 		});
