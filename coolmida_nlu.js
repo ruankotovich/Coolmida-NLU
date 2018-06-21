@@ -9,7 +9,7 @@ const tokenizer = new natural.OrthographyTokenizer({ language: "pt" })
 const classifier = new natural.BayesClassifier();
 const stemmer = natural.PorterStemmerPt;
 const str$distance = natural.LevenshteinDistance;
-const SERVER_URL = process.env.ENVIRONMENT === "remote" ? `https://coolmida.onthewifi.com/api/recipe/` : "http://localhost:8000/api/recipe";
+const SERVER_URL = process.env.ENVIRONMENT === "remote" ? `https://coolmida.onthewifi.com/api/trainset/recipe` : "http://localhost:8000//api/trainset/recipe";
 const USE_FILE = process.env.USE_FILE === "true";
 
 console.log("Using SERVER_URL = ", SERVER_URL);
