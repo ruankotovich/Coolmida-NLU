@@ -430,6 +430,11 @@ class CoolmidaNLU {
 
 	search(phrase) {
 		let intentions = this.intentionDetect(phrase);
+
+		if (!intentions.timeValue && intentions.time === "speed.fast") {
+			intentions.timeValue = 20;
+		}
+
 		console.log(`Intention : ${JSON.stringify(intentions)}`);
 
 		let searchCriteria = [];
