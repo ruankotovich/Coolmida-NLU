@@ -9,7 +9,7 @@ const tokenizer = new natural.OrthographyTokenizer({ language: "pt" })
 const classifier = new natural.BayesClassifier();
 const stemmer = natural.PorterStemmerPt;
 const str$distance = natural.LevenshteinDistance;
-const SERVER_URL = process.env.ENVIRONMENT === "remote" ? `https://coolmida.onthewifi.com/api/trainset/recipe` : "http://localhost:8000//api/trainset/recipe";
+const SERVER_URL = process.env.ENVIRONMENT === "remote" ? `https://coolmida.onthewifi.com/api/recipe/` : "http://localhost:8000/api/recipe";
 const USE_FILE = process.env.USE_FILE === "true";
 
 console.log("Using SERVER_URL = ", SERVER_URL);
@@ -431,7 +431,7 @@ class CoolmidaNLU {
 	search(phrase) {
 		let intentions = this.intentionDetect(phrase);
 
-		if (!intentions.timeValue && intentions.time === "speed.fast") {
+		if(!intentions.timeValue && intentions.time === "speed.fast"){
 			intentions.timeValue = 20;
 		}
 
@@ -459,7 +459,6 @@ class CoolmidaNLU {
 			if (recoveredRecipe) {
 				if ((!intentions.timeValue || intentions.timeValue >= recoveredRecipe.avg_time) && (!intentions.maxKcal || recoveredRecipe.kcal_sum <= intentions.maxKcal)) {
 					let curRecipe = Object.assign({}, recoveredRecipe);
-
 					let having = {};
 
 					this.tokenizePhrase(searchCriteria.join(" ")).forEach((ing) => {
@@ -489,7 +488,7 @@ class CoolmidaNLU {
 					});
 
 					curRecipe.completeness = {};
-					curRecipe.completeness.value = parseFloat(curRecipe.having.length) / parseFloat(curRecipe.ingredients.length) || 0.0;
+					curRecipe.completeness.value = parseFloat(curRecipe.having.length) / parseFloat(Object.keys(curRecipe.recipeingredient_set).length) || 0.0;
 					curRecipe.completeness.prettyString = `${(curRecipe.completeness.value * 100.0).toFixed(1)}%`;
 
 					if (!intentions.budget || intentions.budget >= priceAccumulator) {
